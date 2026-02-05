@@ -15,7 +15,94 @@ const btnRestart2 = document.getElementById("btnRestart2");
 const finalScoreEl = document.getElementById("finalScore");
 const backBtn = document.getElementById("backBtn");
 
-// ====== ゲーム状態 ======
+// ======================
+// スキン設定（setting.html の保存を反映）
+// ======================
+const SKIN_KEY = "bombSkin";          // setting.html と一致させる
+const SKIN_VER_KEY = "bombSkinVersion"; // キャッシュ対策用（保存時に Date.now() を入れる想定）
+
+let skinVersion = localStorage.getItem(SKIN_VER_KEY) || "0";
+let currentSkinName = localStorage.getItem(SKIN_KEY) || "standard";
+
+/**
+ * 画像パスはここだけ自分の構成に合わせて変更！
+ * - standard: red/black それぞれ normal+blink の2枚
+ * - bomb: 1枚ずつ（点滅はCSS）
+ */
+const SKINS = {
+  standard: {
+    blinkMode: "swap", // 画像切替で点滅
+    red: {
+      normal: "../img/tubothi_mae.png",
+      blink: "../img/tubothi_yoko.png",
+    },
+    black: {
+      normal: "../img/simantyu_mae.png",
+      blink: "../img/simantyu_yoko.png",
+    },
+    goal:{
+      red:"../img/tubothi_mae.png",
+      black:"../img/simantyu_mae.png",
+    }
+  },
+  bomb: {
+    blinkMode: "css", // CSS点滅
+    red: {
+      normal: "../img/red_bomb.png",
+      blink: null,
+    },
+    black: {
+      normal: "../img/black_bomb.png",
+      blink: null,
+    },
+    goal:null
+  },
+};
+
+function getSkin() {
+  return SKINS[currentSkinName] || SKINS.standard;
+}
+
+function applyGoalSkin() {
+  const skin = getSkin();
+
+  const redFrame = goalRed.querySelector(".frame");
+  const blackFrame = goalBlack.querySelector(".frame");
+
+  if (!redFrame || !blackFrame) return;
+
+  if (skin.goal) {
+    // スタンダード：ゴール画像に差し替え
+    redFrame.textContent = "";
+    blackFrame.textContent = "";
+
+    redFrame.style.backgroundImage = `url("${imgUrl(skin.goal.red)}")`;
+    blackFrame.style.backgroundImage = `url("${imgUrl(skin.goal.black)}")`;
+
+    redFrame.style.backgroundRepeat = "no-repeat";
+    redFrame.style.backgroundPosition = "center";
+    redFrame.style.backgroundSize = "contain";
+
+    blackFrame.style.backgroundRepeat = "no-repeat";
+    blackFrame.style.backgroundPosition = "center";
+    blackFrame.style.backgroundSize = "contain";
+  } else {
+    // 爆弾ver：文字表示に戻す
+    redFrame.style.backgroundImage = "";
+    blackFrame.style.backgroundImage = "";
+    redFrame.textContent = "RED GOAL";
+    blackFrame.textContent = "BLACK GOAL";
+  }
+}
+
+// 画像キャッシュ対策（保存ごとに version を変える）
+function imgUrl(path) {
+  return `${path}?v=${encodeURIComponent(skinVersion)}`;
+}
+
+// ======================
+// ゲーム状態
+// ======================
 let score = 0;
 let isGameOver = false;
 
@@ -34,7 +121,7 @@ const wanderEveryMs = 700;   // 方向ゆらぎ頻度
 const baseSpeedMin = 0.8;
 const baseSpeedMax = 2.6;
 
-// id -> { el, timeoutId, x,y,vx,vy, dragging, lastWanderAt, wanderEvery, maxSpeed }
+// id -> { el, timeoutId, x,y,vx,vy, dragging, lastWanderAt, wanderEvery, maxSpeed, blinkIntervalId }
 const activeBombs = new Map();
 
 // ====== ユーティリティ ======
@@ -58,6 +145,59 @@ function getStageRect() {
   return stage.getBoundingClientRect();
 }
 
+// ======================
+// 点滅停止（swap / css 両対応）
+// ======================
+function stopBlink(el) {
+  // CSS点滅停止
+  el.classList.remove("blink");
+
+  // swap点滅停止
+  const id = el.dataset.id;
+  const info = activeBombs.get(id);
+  if (info?.blinkIntervalId) {
+    clearInterval(info.blinkIntervalId);
+    info.blinkIntervalId = null;
+  }
+}
+
+// 爆発の文言
+function makeExplodeReason(el, situation) {
+  const type = el.dataset.type; // "red" | "black"
+
+  // ===== スタンダード =====
+  if (currentSkinName === "standard") {
+    if (situation === "timeout") {
+      return type === "red"
+        ? "坪内先生が爆発しました。放置しやがって"
+        : "志摩先生が爆発しました。放置…しましたね";
+    }
+
+    if (situation === "wrong") {
+      return type === "red"
+        ? "坪内先生が爆発しました。違う場所じゃーい"
+        : "志摩先生が爆発しました。ここじゃないですよー！";
+    }
+  }
+
+  // ===== 爆弾ver =====
+  if (currentSkinName === "bomb") {
+    if (situation === "timeout") {
+      return type === "red"
+        ? "赤ボムが爆発しました。放置しすぎです。"
+        : "黒ボムが爆発しました。放置しすぎです。";
+    }
+
+    if (situation === "wrong") {
+      return type === "red"
+        ? "赤ボムが爆発しました。違う場所に入りました。"
+        : "黒ボムが爆発しました。違う場所に入りました。";
+    }
+  }
+
+  return "爆発しました。";
+}
+
 // ====== ゲームオーバー ======
 function showGameOver(reason) {
   if (isGameOver) return;
@@ -70,11 +210,16 @@ function showGameOver(reason) {
   // 残ってるボムの爆発タイマーを停止（見た目固定）
   for (const [, info] of activeBombs) {
     clearTimeout(info.timeoutId);
+    // swap点滅も止める
+    if (info.blinkIntervalId) {
+      clearInterval(info.blinkIntervalId);
+      info.blinkIntervalId = null;
+    }
     info.el.style.pointerEvents = "none";
   }
 
   overReasonEl.textContent = reason;
-  finalScoreEl.textContent = String(score); 
+  finalScoreEl.textContent = String(score);
   overlay.classList.remove("hidden");
 }
 
@@ -92,6 +237,7 @@ function resetGame() {
   // 既存ボム削除
   for (const [, info] of activeBombs) {
     clearTimeout(info.timeoutId);
+    if (info.blinkIntervalId) clearInterval(info.blinkIntervalId);
     info.el.remove();
   }
   activeBombs.clear();
@@ -137,15 +283,19 @@ function createBombElement(type) {
   const el = document.createElement("div");
   el.className = `bomb ${type}`;
   el.dataset.type = type;
-
   el.setAttribute("aria-label", type === "red" ? "red bomb" : "black bomb");
 
-  // （互換性のため一応入れておく。CSSで非表示になる）
-  const fuse = document.createElement("div");
-  fuse.className = "fuse";
-  fuse.innerHTML = "<i></i>";
-  el.appendChild(fuse);
+  // 画像表示（img）
+  const img = document.createElement("img");
+  img.alt = type === "red" ? "red bomb" : "black bomb";
+  img.draggable = false;
 
+  const skin = getSkin();
+  img.src = imgUrl(skin[type].normal);
+
+  el.appendChild(img);
+
+  // fuse DOMは不要（タイマー表示しない）なので作らない
   return el;
 }
 
@@ -163,9 +313,50 @@ function placeBomb(el, fromTop) {
   el.style.top = `${y}px`;
 }
 
+/**
+ * 残り時間が1/3になったら点滅
+ * - standard: 画像2枚の切替（swap）
+ * - bomb: CSS点滅（.blink）
+ */
 function animateFuse(el, ttlMs) {
   const start = performance.now();
-  let blinked = false;
+  let startedBlink = false;
+
+  function startBlink() {
+    if (startedBlink) return;
+    startedBlink = true;
+
+    const type = el.dataset.type;
+    const img = el.querySelector("img");
+    const skin = getSkin();
+
+    if (skin.blinkMode === "swap") {
+      const a = imgUrl(skin[type].normal);
+      const b = imgUrl(skin[type].blink);
+
+      // 安全策：blink画像が未設定ならCSSにフォールバック
+      if (!skin[type].blink) {
+        el.classList.add("blink");
+        return;
+      }
+
+      let on = false;
+      const intervalId = setInterval(() => {
+        if (isGameOver || !el.isConnected) {
+          clearInterval(intervalId);
+          return;
+        }
+        on = !on;
+        img.src = on ? b : a;
+      }, 120);
+
+      const id = el.dataset.id;
+      const info = activeBombs.get(id);
+      if (info) info.blinkIntervalId = intervalId;
+    } else {
+      el.classList.add("blink");
+    }
+  }
 
   function tick(now) {
     if (isGameOver) return;
@@ -173,12 +364,7 @@ function animateFuse(el, ttlMs) {
     const t = (now - start) / ttlMs;
     const remain = clamp(1 - t, 0, 1);
 
-    // 残り1/3以下で点滅開始（1回だけclass付与）
-    if (!blinked && remain <= 1 / 3) {
-      el.classList.add("blink");
-      blinked = true;
-    }
-
+    if (!startedBlink && remain <= 1 / 3) startBlink();
     if (remain > 0) requestAnimationFrame(tick);
   }
 
@@ -186,7 +372,7 @@ function animateFuse(el, ttlMs) {
 }
 
 function explode(el, reason) {
-  el.classList.remove("blink");
+  stopBlink(el);
   el.classList.add("explode");
   setTimeout(() => el.remove(), 450);
   showGameOver(reason);
@@ -203,33 +389,26 @@ function spawnBomb() {
   stage.appendChild(el);
   placeBomb(el, fromTop);
 
-  // ====== ボムごとの制限時間（導火線） ======
+  // ====== ボムごとの制限時間 ======
   const base = rand(1800, 4500);
   const difficultyFactor = clamp(1 - (1400 - spawnMs) / 1400 * 0.35, 0.65, 1);
   const ttlMs = Math.round(base * difficultyFactor);
 
-  animateFuse(el, ttlMs);
-
-  const timeoutId = setTimeout(() => {
-    if (isGameOver) return;
-    activeBombs.delete(id);
-    explode(el, "放置してしまい、ボムが爆発しました。");
-  }, ttlMs);
-
-  // ====== 移動パラメータ ======
+  // activeBombs に先に登録（animateFuseのswap点滅で intervalId を入れられるように）
   const x0 = parseFloat(el.style.left);
   const y0 = parseFloat(el.style.top);
 
-  const diffBoost = 1 + (1400 - spawnMs) / 1400 * 0.55; // 難易度で速く
+  const diffBoost = 1 + (1400 - spawnMs) / 1400 * 0.55;
   const speed = rand(baseSpeedMin, baseSpeedMax) * diffBoost;
 
   const ang = rand(0, Math.PI * 2);
   const vx0 = Math.cos(ang) * speed;
   const vy0 = Math.sin(ang) * speed;
 
+  // 先登録
   activeBombs.set(id, {
     el,
-    timeoutId,
+    timeoutId: null,
     x: x0,
     y: y0,
     vx: vx0,
@@ -237,8 +416,22 @@ function spawnBomb() {
     dragging: false,
     lastWanderAt: performance.now(),
     wanderEvery: wanderEveryMs + rand(-200, 200),
-    maxSpeed: 4.2 * diffBoost
+    maxSpeed: 4.2 * diffBoost,
+    blinkIntervalId: null,
   });
+
+  animateFuse(el, ttlMs);
+
+  const timeoutId = setTimeout(() => {
+  if (isGameOver) return;
+  activeBombs.delete(id);
+  explode(el, makeExplodeReason(el, "timeout"));
+}, ttlMs);
+
+
+  // timeoutId を反映
+  const info = activeBombs.get(id);
+  if (info) info.timeoutId = timeoutId;
 
   enableDrag(el);
 }
@@ -272,24 +465,27 @@ function checkDrop(el) {
 }
 
 function handleSuccess(el) {
+  stopBlink(el);
+
   const id = el.dataset.id;
   const info = activeBombs.get(id);
   if (info) clearTimeout(info.timeoutId);
   activeBombs.delete(id);
 
   setScore(score + 10);
-  el.classList.remove("blink");
   el.classList.add("explode");
   setTimeout(() => el.remove(), 450);
 }
 
 function handleWrong(el) {
+  stopBlink(el);
+
   const id = el.dataset.id;
   const info = activeBombs.get(id);
   if (info) clearTimeout(info.timeoutId);
   activeBombs.delete(id);
 
-  explode(el, "違う色のゴールに入れてしまい、爆発しました。");
+  explode(el, makeExplodeReason(el, "wrong"));
 }
 
 // ====== ボム移動 ======
@@ -309,11 +505,9 @@ function moveBombs() {
     if (now - info.lastWanderAt > info.wanderEvery) {
       info.lastWanderAt = now;
 
-      // 少しだけ方向をブレさせる
       vx += rand(-0.35, 0.35);
       vy += rand(-0.35, 0.35);
 
-      // 速くなりすぎ防止
       const sp = Math.hypot(vx, vy);
       const maxSp = info.maxSpeed;
       if (sp > maxSp) {
@@ -325,7 +519,6 @@ function moveBombs() {
     x += vx;
     y += vy;
 
-    // 壁で反射
     if (x <= 0) { x = 0; vx = Math.abs(vx); }
     if (x >= stageRect.width - bombSize) { x = stageRect.width - bombSize; vx = -Math.abs(vx); }
 
@@ -399,7 +592,6 @@ function enableDrag(el) {
       if (res.ok) handleSuccess(el);
       else handleWrong(el);
     }
-    // 何も入らなければそのまま（時間切れ爆発の可能性あり）
   }
 
   el.addEventListener("pointerdown", onPointerDown);
@@ -420,8 +612,29 @@ window.addEventListener("keydown", (e) => {
 
 // ホームへ戻る
 backBtn.addEventListener("click", () => {
-  window.location.href = "index.html"; 
+  window.location.href = "index.html";
 });
+
+// （任意）別タブで設定を変えたら即反映したい場合
+window.addEventListener("storage", (e) => {
+  if (e.key === SKIN_KEY || e.key === SKIN_VER_KEY) {
+    currentSkinName = localStorage.getItem(SKIN_KEY) || "standard";
+    skinVersion = localStorage.getItem(SKIN_VER_KEY) || "0";
+
+    // 既存ボムの画像も更新
+    const skin = getSkin();
+    for (const [, info] of activeBombs) {
+      stopBlink(info.el);
+      const type = info.el.dataset.type;
+      const img = info.el.querySelector("img");
+      if (img) img.src = imgUrl(skin[type].normal);
+    }
+
+    applyGoalSkin();
+  }
+});
+
+applyGoalSkin();
 
 // 起動
 resetGame();

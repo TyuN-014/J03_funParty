@@ -143,33 +143,27 @@ button:active{ transform: translateY(1px); }
 .spawn-line.top{ top: 16px; }
 .spawn-line.bottom{ bottom: 16px; }
 
-/* ボム（画像表示） */
+/* ボム（img表示） */
 .bomb{
   position:absolute;
   width: 74px;
   height: 74px;
   cursor: grab;
   touch-action:none;
-
-  /* 画像を背景として表示 */
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
+  filter: drop-shadow(0 18px 20px rgba(0,0,0,.55));
 }
 
 .bomb:active{ cursor: grabbing; }
 
-.bomb.red{
-  background-image: url("../img/red_bomb.png");
+.bomb img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+  pointer-events:none; /* 画像にポインタが吸われないように */
 }
 
-.bomb.black{
-  background-image: url("../img/black_bomb.png");
-}
-
-/* ===== 残り1/3で点滅（色別） ===== */
-
-/* 赤ボム：激しく・危険感 */
+/* 爆弾ver用：CSS点滅（※JS側で bomb のときだけ .blink を付ける想定） */
 .bomb.red.blink{
   animation: redBlink 0.15s linear infinite;
   filter:
@@ -178,17 +172,10 @@ button:active{ transform: translateY(1px); }
 }
 
 @keyframes redBlink{
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: .35;
-    transform: scale(1.08);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .35; transform: scale(1.08); }
 }
 
-/* 黒ボム：不気味・警告感（白く光る） */
 .bomb.black.blink{
   animation: blackBlink 0.35s ease-in-out infinite;
   filter:
@@ -197,12 +184,8 @@ button:active{ transform: translateY(1px); }
 }
 
 @keyframes blackBlink{
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: .55;
-  }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .55; }
 }
 
 /* 爆発エフェクト */
