@@ -1,0 +1,46 @@
+<!-- ゲーム画面 -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/play.css">
+  <title>お楽しみ会</title>
+</head>
+<body>
+  <header>
+    <div class="hud">
+      <div class="pill">スコア: <b id="score">0</b></div>
+      <div class="pill">出現間隔: <b id="spawnMs">1400</b>ms</div>
+      <div class="pill">操作: ボムをドラッグして左右のゴールへ</div>
+    </div>
+    <button id="btnRestart" type="button">リスタート</button>
+  </header>
+
+  <main id="stage" aria-label="game stage">
+    <div id="goalRed" class="goal" data-goal="red" aria-label="red goal">
+      <div class="frame">RED GOAL</div>
+    </div>
+
+    <div id="goalBlack" class="goal" data-goal="black" aria-label="black goal">
+      <div class="frame">BLACK GOAL</div>
+    </div>
+
+    <div class="spawn-line top">TOP</div>
+    <div class="spawn-line bottom">BOTTOM</div>
+
+    <!-- bombs are injected here -->
+    <div id="overlay" class="overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal">
+        <h2 id="overTitle">ゲームオーバー</h2>
+        <p>スコア：<b id="finalScore"></b></p>
+        <p id="overReason" class="reason">理由</p>
+        <p class="hint">Enter / R でもリスタートできます</p>
+        <button id="btnRestart2" type="button">もう一回</button>
+        <button id="backBtn" type="button">ホームへ</button>
+      </div>
+    </div>
+  </main>
+  <script src="../js/play.js"></script>
+</body>
+</html>
