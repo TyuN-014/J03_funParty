@@ -33,26 +33,26 @@ const SKINS = {
   standard: {
     blinkMode: "swap", // 画像切替で点滅
     red: {
-      normal: "../img/tubothi_mae.png",
-      blink: "../img/tubothi_yoko.png",
+      normal: "img/tubothi_mae.png",
+      blink: "img/tubothi_yoko.png",
     },
     black: {
-      normal: "../img/simantyu_mae.png",
-      blink: "../img/simantyu_yoko.png",
+      normal: "img/simantyu_mae.png",
+      blink: "img/simantyu_yoko.png",
     },
     goal:{
-      red:"../img/tubothi_mae.png",
-      black:"../img/simantyu_mae.png",
+      red:"img/tubothi_mae.png",
+      black:"img/simantyu_mae.png",
     }
   },
   bomb: {
     blinkMode: "css", // CSS点滅
     red: {
-      normal: "../img/red_bomb.png",
+      normal: "img/red_bomb.png",
       blink: null,
     },
     black: {
-      normal: "../img/black_bomb.png",
+      normal: "img/black_bomb.png",
       blink: null,
     },
     goal:null
