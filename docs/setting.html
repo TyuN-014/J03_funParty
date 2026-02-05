@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>設定 | 刑務作業ゲーム</title>
+
+  <link rel="stylesheet" href="../css/setting.css">
+</head>
+<body>
+
+  <main class="page">
+    <!-- 左上：戻る -->
+    <a class="back-btn" href="index.html" aria-label="戻る">← 戻る</a>
+
+    <!-- 中央：設定カード -->
+    <section class="card" aria-label="ゲーム設定">
+      <h3 class="title">設定</h3>
+      <p class="desc">ゲーム性を選択してください。</p>
+
+      <fieldset class="group">
+        <legend class="legend">ゲーム性</legend>
+
+        <label class="option">
+          <input type="radio" name="mode" value="standard" checked>
+          <span class="option-body">
+            <span class="option-title">スタンダード</span>
+            <span class="option-sub"></span>
+          </span>
+        </label>
+
+        <label class="option">
+          <input type="radio" name="mode" value="bomb">
+          <span class="option-body">
+            <span class="option-title">爆弾ver</span>
+            <span class="option-sub"></span>
+          </span>
+        </label>
+      </fieldset>
+    </section>
+
+    <!-- 右下：保存（リンク先を変更できるように a タグ） -->
+    <a class="save-btn" href="index.html">保存</a>
+  </main>
+  <script src="../js/setting.js"></script>
+</body>
+</html>

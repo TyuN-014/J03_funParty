@@ -1,0 +1,106 @@
+:root{
+  --bg:#0b1020;
+  --text:#e9ecff;
+  --muted:#aab2e6;
+  --accent:#60a5fa;
+  --shadow: 0 14px 40px rgba(0,0,0,.35);
+  --radius: 18px;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Meiryo", Arial, sans-serif;
+  background:
+    radial-gradient(1200px 900px at 20% 10%, rgba(96,165,250,.20), transparent 60%),
+    radial-gradient(900px 700px at 90% 30%, rgba(52,211,153,.16), transparent 60%),
+    radial-gradient(1000px 900px at 40% 90%, rgba(251,113,133,.14), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+
+/* カード全体 */
+.home-card{
+  width:min(720px, 100%);
+  border-radius: 26px;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow: var(--shadow);
+  overflow:hidden;
+}
+
+/* 中身 */
+.home-inner{
+  padding:26px 22px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+  text-align:center;
+}
+
+/* タイトル */
+h3{
+  margin:0;
+  font-size:28px;
+  letter-spacing:.06em;
+}
+
+/* 説明文 */
+.sub{
+  margin:0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ボタンエリア */
+.actions{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  justify-content:center;
+  margin-top:6px;
+}
+
+/* ボタン共通 */
+a.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:12px 16px;
+  min-width:160px;
+  border-radius:14px;
+  text-decoration:none;
+  font-weight:800;
+  font-size:14px;
+  color: var(--text);
+  background: rgba(96,165,250,.16);
+  border:1px solid rgba(96,165,250,.35);
+  transition:.15s transform, .15s opacity;
+}
+
+a.btn:hover{
+  transform: translateY(-1px);
+}
+
+a.btn.secondary{
+  background: rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  color: var(--muted);
+}
+
+/* 補足テキスト */
+.note{
+  margin-top:10px;
+  font-size:12px;
+  color: var(--muted);
+}
